@@ -3,6 +3,7 @@
 namespace NotificationChannels\Webhook;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Arr;
 use NotificationChannels\Webhook\Exceptions\CouldNotSendNotification;
@@ -38,12 +39,17 @@ class WebhookChannel
 
         $webhookData = $notification->toWebhook($notifiable)->toArray();
 
-        $response = $this->client->post($url, [
-            'query' => Arr::get($webhookData, 'query'),
-            'body' => json_encode(Arr::get($webhookData, 'data')),
-            'verify' => Arr::get($webhookData, 'verify'),
-            'headers' => Arr::get($webhookData, 'headers'),
-        ]);
+        try {
+            $response = $this->client->post($url, [
+                'query' => Arr::get($webhookData, 'query'),
+                'body' => json_encode(Arr::get($webhookData, 'data')),
+                'verify' => Arr::get($webhookData, 'verify'),
+                'headers' => Arr::get($webhookData, 'headers'),
+                'http_errors' => false
+            ]);
+        } catch (RequestException $e) {
+            throw CouldNotSendNotification::connectionError($e);
+        }
 
         if ($response->getStatusCode() >= 300 || $response->getStatusCode() < 200) {
             throw CouldNotSendNotification::serviceRespondedWithAnError($response);

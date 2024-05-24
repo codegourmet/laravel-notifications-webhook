@@ -34,6 +34,15 @@ class CouldNotSendNotification extends \Exception
         );
     }
 
+    public static function connectionError(Response $response)
+    {
+        return new self(
+            $response,
+            sprintf('Error sending request to webhook: `%s`', $e->getMessage()),
+            999
+        );
+    }
+
     /**
      * @return Response
      */
